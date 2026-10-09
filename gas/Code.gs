@@ -18,8 +18,8 @@
 const SETTINGS = {
   // ★ 各カレンダーのID（Googleカレンダー > 設定 > カレンダーの統合 > カレンダーID）
   CALENDARS: {
-    small: 'ここに小部屋カレンダーのID@group.calendar.google.com',
-    large: 'ここに大部屋カレンダーのID@group.calendar.google.com'
+    small: 'd3fe6571cce6b7ea6c8ba5f885908a9f9c1b450ff64285e3d6dc5980f1ce0180@group.calendar.google.com',
+    large: '30a6432b24ec60e825b26bfb455437224d0a1f3b91bd71bee4c398f646f89db7@group.calendar.google.com'
   },
   // 当月を含めて何か月先まで公開するか。これより先の日付は「－（情報準備中）」になります。
   MONTHS_PUBLISHED: 3,
