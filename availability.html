@@ -357,10 +357,14 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
   const CONFIG = {
     // 空き状況データの取得先（Google Apps Script のウェブアプリURL）。
     // 空のままだと「サンプル表示」になり、実際の予約状況は一切表示されません。
-    gasUrl: 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnSi0R6cS7MtmuSiNUz_ilODjwixGIVmcBMKy_orSnm_CHcskcnsG6PQUA58bimrAdv_drIb5Toc_F3qyEIxB9Rxmga0fi1iq50aPp9SyzgrasDTyO29-eYRPHoliGgJN84t6nVJS3zMI6ou50T51i2pL8MZYbKJt8-HBWdO70sfJ3_c-xJMY5vWU-p8Y0GYghAGz3_rOzO1VFX-6u0yjYAmv9iNc13YuUwRIp70_284UWk8vLNxkh9Q0chNt_i3zWhphwp4T21iA74sxjQb_rtrKjfeQA&lib=M-Yb5KYtbUiVVEfBmO-4zj4qp-YWZugX1',
+    gasUrl: '',
 
     // 将来、別の予約サイトを作ったらそのURLを入れると、メールの代わりにそこへ移動します。
     reservationUrl: '',
+
+    // LINE公式アカウントのベーシックID（例: '@123abcde'）。入れると、問い合わせ先がメールからLINEに変わります。
+    // 空のままなら、これまで通りメールです。
+    lineId: '@843qmclo',
 
     contactEmail: 'info@harmo.co.jp',
     contactTel: '090-8648-2850',
@@ -610,11 +614,28 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
     return out;
   }
 
+  function lineUrl(text) {
+    return 'https://line.me/R/oaMessage/' + encodeURIComponent(CONFIG.lineId) + '/?' + encodeURIComponent(text);
+  }
+
   function buildCta(info) {
     const room = ROOMS[state.room];
     const ranges = pickedRanges(info);
     const times = ranges.length ? ranges.map(r => `${hm(r.s)}〜${hm(r.e)}`).join('、') : '（ご希望の時間をご記入ください）';
     const test = state.demo ? '【テスト】' : '';
+    if (CONFIG.lineId) {
+      const hours = state.picked.size;
+      const lines = [
+        `${test}【貸しサロン】空き状況のお問い合わせ`,
+        `■ご希望の部屋：${room.label}`,
+        `■ご利用日：${dateLabel(state.sheetDate)}`,
+        `■ご希望の時間：${times}`
+      ];
+      if (ranges.length) lines.push(`■料金の目安：${yen(room.price * hours)}`);
+      lines.push('■ご利用人数：', '■お名前：', '■ご利用目的：');
+      if (state.demo) lines.push('※サンプル表示からのテスト送信です。');
+      return lineUrl(lines.join('\n'));
+    }
     if (CONFIG.reservationUrl) {
       const u = new URL(CONFIG.reservationUrl, location.href);
       u.searchParams.set('room', state.room);
@@ -652,7 +673,12 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
         ? 'この日の空き状況は準備中です。お気軽にお問い合わせください。'
         : '時間を選ぶと、お問い合わせ文に入ります（選ばなくても送れます）。';
     }
-    $('cta').href = buildCta(info);
+    const cta = $('cta');
+    cta.href = buildCta(info);
+    if (CONFIG.lineId) {
+      cta.target = '_blank'; cta.rel = 'noopener';
+      cta.querySelector('span').textContent = 'LINEでこの日程を相談する';
+    }
   }
 
   function openSheet(ds, trigger) {
@@ -778,7 +804,10 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
     const now = nowJST();
     $('homeLink').href = CONFIG.homeUrl;
     $('logo').href = CONFIG.homeUrl;
-    $('monthlyLink').href = `mailto:${CONFIG.contactEmail}?subject=${encodeURIComponent('【貸しサロン】月額入居のお問い合わせ')}`;
+    if (CONFIG.lineId) {
+      $('monthlyLink').href = lineUrl('【貸しサロン】月額入居のお問い合わせ');
+      $('monthlyLink').target = '_blank'; $('monthlyLink').rel = 'noopener';
+    } else $('monthlyLink').href = `mailto:${CONFIG.contactEmail}?subject=${encodeURIComponent('【貸しサロン】月額入居のお問い合わせ')}`;
     state.view = { y: now.y, m: now.m };
     bind();
     renderMeta();
