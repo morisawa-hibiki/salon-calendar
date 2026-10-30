@@ -366,6 +366,10 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
     // 空のままなら、これまで通りメールです。
     lineId: '@843qmclo',
 
+    // true: 時間を選んで送ると「ご予約のお申し込み」の文面になり、LINE自動予約（GAS側）が受け付けます。
+    // false: これまで通り、すべて「空き状況のお問い合わせ」として手動対応します。
+    autoBooking: true,
+
     contactEmail: 'info@harmo.co.jp',
     contactTel: '090-8648-2850',
     homeUrl: 'https://harmo.co.jp/',
@@ -625,8 +629,9 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
     const test = state.demo ? '【テスト】' : '';
     if (CONFIG.lineId) {
       const hours = state.picked.size;
+      const auto = CONFIG.autoBooking && ranges.length > 0 && !state.demo;
       const lines = [
-        `${test}【貸しサロン】空き状況のお問い合わせ`,
+        `${test}【貸しサロン】${auto ? 'ご予約のお申し込み' : '空き状況のお問い合わせ'}`,
         `■ご希望の部屋：${room.label}`,
         `■ご利用日：${dateLabel(state.sheetDate)}`,
         `■ご希望の時間：${times}`
@@ -671,13 +676,16 @@ h1{margin:0;font-family:var(--serif);font-weight:700;font-size:34px;letter-spaci
     } else {
       summary.textContent = info.state === 'unknown'
         ? 'この日の空き状況は準備中です。お気軽にお問い合わせください。'
-        : '時間を選ぶと、お問い合わせ文に入ります（選ばなくても送れます）。';
+        : CONFIG.lineId && CONFIG.autoBooking
+          ? '時間を選んで送信すると、空いていればその場で予約が確定します。'
+          : '時間を選ぶと、お問い合わせ文に入ります（選ばなくても送れます）。';
     }
     const cta = $('cta');
     cta.href = buildCta(info);
     if (CONFIG.lineId) {
       cta.target = '_blank'; cta.rel = 'noopener';
-      cta.querySelector('span').textContent = 'LINEでこの日程を相談する';
+      cta.querySelector('span').textContent = CONFIG.autoBooking && ranges.length && !state.demo
+        ? 'LINEで予約を申し込む' : 'LINEでこの日程を相談する';
     }
   }
 
